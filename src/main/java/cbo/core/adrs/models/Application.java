@@ -13,9 +13,6 @@ import java.util.List;
 @Entity
 @Table(name = "applications")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Application {
 
     @Id
@@ -36,8 +33,7 @@ public class Application {
 
     // Application owner (main person)
 
-    @JoinColumn(name = "owner_id")
-    private String owner;
+    private String ownerId;
 
     // Modules
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL)
