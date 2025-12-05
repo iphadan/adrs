@@ -10,11 +10,11 @@
 	</parent>
 
 
-	<groupId>com.cbo</groupId>
-	<artifactId>oldms</artifactId>
+	<groupId>cbo.core</groupId>
+	<artifactId>adrs</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>adrs</name>
-	<description>ADR (Application Detail Registry System)An internal system used by our bank’s core team to document, catalogue, and manage all applications running inside the bank environment.</description>
+	<description>ADR (Application Detail Registry System) An internal system used by our bank’s core team to document, catalogue, and manage all applications running inside the bank environment.</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -44,6 +44,11 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.16.1</version>
+		</dependency>
 
 
 		<dependency>
@@ -144,8 +149,8 @@
 							<version>1.5.5.Final</version>
 						</path>
 					</annotationProcessorPaths>
-					<source>11</source>
-					<target>11</target>
+					<source>1.8</source>
+					<target>1.8</target>
 				</configuration>
 			</plugin>
 		</plugins>

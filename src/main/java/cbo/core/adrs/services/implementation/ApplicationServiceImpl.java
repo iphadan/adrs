@@ -1,16 +1,18 @@
 package cbo.core.adrs.services.implementation;
 
-
-
-import cbo.core.adrs.models.*;
+import cbo.core.adrs.dtos.*;
 import cbo.core.adrs.enums.ApplicationStatus;
+import cbo.core.adrs.exceptions.ResourceNotFoundException;
+import cbo.core.adrs.models.*;
 import cbo.core.adrs.repositories.*;
 import cbo.core.adrs.services.ApplicationService;
+import cbo.core.adrs.utils.SanitizationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,151 +20,254 @@ import java.util.List;
 public class ApplicationServiceImpl implements ApplicationService {
 
     private final ApplicationRepo applicationRepository;
+    private final ApplicationCategoryRepo categoryRepository;
     private final ApplicationModuleRepo moduleRepository;
     private final ApplicationDeploymentRepo deploymentRepository;
-    private final ApplicationCategoryRepo categoryRepository;
     private final ServerRepo serverRepository;
 
-    // ------------------- APPLICATION CRUD -------------------
-    @Override
-    public Application create(Application app) {
-        return applicationRepository.save(app);
-    }
+    // ---------------- Application CRUD ----------------
 
     @Override
-    public Application update(Long id, Application req) {
-        Application db = applicationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+    public ApplicationResponse createApplication(ApplicationRequest request) {
+        // sanitize inputs
+        String name = SanitizationUtil.cleanText(request.getName());
+        String version = SanitizationUtil.cleanText(request.getVersion());
+        String description = SanitizationUtil.cleanHtml(request.getDescription());
+        String ownerId = SanitizationUtil.cleanText(request.getOwnerId());
 
-        db.setName(req.getName());
-        db.setVersion(req.getVersion());
-        db.setDescription(req.getDescription());
-        db.setOwnerId(req.getOwnerId());
-        db.setStatus(req.getStatus());
-        db.setCategories(req.getCategories());
+        Application app = Application.builder()
+                .name(name)
+                .version(version)
+                .description(description)
+                .ownerId(ownerId)
+                .status(request.getStatus() == null ? ApplicationStatus.ACTIVE : request.getStatus())
+                .build();
 
-        return applicationRepository.save(db);
-    }
-
-    @Override
-    public void delete(Long id) {
-        Application app = getById(id);
-        app.setStatus(ApplicationStatus.ARCHIVED); // soft delete
-        applicationRepository.save(app);
-    }
-
-    @Override
-    public Application getById(Long id) {
-        return applicationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
-    }
-
-    @Override
-    public List<Application> getAll() {
-        return applicationRepository.findAll();
-    }
-
-    @Override
-    public List<Application> getByStatus(ApplicationStatus status) {
-        return applicationRepository.findByStatus(status);
-    }
-
-    @Override
-    public List<Application> getByOwner(String ownerId) {
-        return applicationRepository.findByOwnerId(ownerId);
-    }
-
-    @Override
-    public List<Application> getByCategory(Long categoryId) {
-        return applicationRepository.findByCategories_Id(categoryId);
-    }
-
-    // ------------------- MODULE MANAGEMENT -------------------
-    @Override
-    public ApplicationModule addModule(Long appId, ApplicationModule module) {
-        Application app = getById(appId);
-        module.setApplication(app);
-        return moduleRepository.save(module);
-    }
-
-    @Override
-    public ApplicationModule updateModule(Long appId, Long moduleId, ApplicationModule req) {
-        Application app = getById(appId);
-        ApplicationModule module = moduleRepository.findById(moduleId)
-                .orElseThrow(() -> new RuntimeException("Module not found"));
-
-        if (!module.getApplication().getId().equals(app.getId()))
-            throw new RuntimeException("Module does not belong to this application");
-
-        module.setModuleName(req.getModuleName());
-        module.setDescription(req.getDescription());
-        module.setResponsibleId(req.getResponsibleId());
-
-        return moduleRepository.save(module);
-    }
-
-    @Override
-    public void removeModule(Long appId, Long moduleId) {
-        ApplicationModule module = moduleRepository.findById(moduleId)
-                .orElseThrow(() -> new RuntimeException("Module not found"));
-
-        if (!module.getApplication().getId().equals(appId))
-            throw new RuntimeException("Module mismatch");
-
-        moduleRepository.delete(module);
-    }
-
-    // ------------------- DEPLOYMENT MANAGEMENT -------------------
-    @Override
-    public ApplicationDeployment addDeployment(Long appId, ApplicationDeployment deployment) {
-        Application app = getById(appId);
-        deployment.setApplication(app);
-
-        // Ensure server exists
-        if (deployment.getServer() != null) {
-            serverRepository.findById(deployment.getServer().getId())
-                    .orElseThrow(() -> new RuntimeException("Server not found"));
+        // categories
+        if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
+            List<ApplicationCategory> cats = categoryRepository.findAllById(request.getCategoryIds());
+            app.setCategories(new ArrayList<>(cats));
+        } else {
+            app.setCategories(new ArrayList<>());
         }
 
-        return deploymentRepository.save(deployment);
+        // save app (cascade for modules/deployments will be handled separately after persisting IDs)
+        Application saved = applicationRepository.save(app);
+
+        // modules - map request modules, set application, save
+        if (request.getModules() != null && !request.getModules().isEmpty()) {
+            Application finalSaved = saved;
+            List<ApplicationModule> modules = request.getModules().stream()
+                    .map(mr -> {
+                        ApplicationModule m = ApplicationModule.builder()
+                                .moduleName(SanitizationUtil.cleanText(mr.getModuleName()))
+                                .description(SanitizationUtil.cleanHtml(mr.getDescription()))
+                                .responsibleId(SanitizationUtil.cleanText(mr.getResponsibleId()))
+                                .application(finalSaved)
+                                .build();
+                        return moduleRepository.save(m);
+                    }).collect(Collectors.toList());
+            saved.setModules(modules);
+        }
+
+        // deployments
+        if (request.getDeployments() != null && !request.getDeployments().isEmpty()) {
+            List<ApplicationDeployment> deploys = new ArrayList<>();
+            for (ApplicationDeploymentRequest dr : request.getDeployments()) {
+                Long serverId = dr.getServerId();
+                Server server = serverRepository.findById(serverId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Server not found with id: " + serverId));
+
+                ApplicationDeployment d = ApplicationDeployment.builder()
+                        .application(saved)
+                        .server(server)
+                        .deploymentPath(SanitizationUtil.cleanText(dr.getDeploymentPath()))
+                        .deploymentDate(dr.getDeploymentDate())
+                        .remarks(SanitizationUtil.cleanHtml(dr.getRemarks()))
+                        .build();
+                deploys.add(deploymentRepository.save(d));
+            }
+            saved.setDeployments(deploys);
+        }
+
+        // final save to attach modules/deployments lists
+        saved = applicationRepository.save(saved);
+        return toApplicationResponse(saved);
     }
 
     @Override
-    public ApplicationDeployment updateDeployment(Long appId, Long deploymentId, ApplicationDeployment req) {
-        ApplicationDeployment db = deploymentRepository.findById(deploymentId)
-                .orElseThrow(() -> new RuntimeException("Deployment not found"));
+    public ApplicationResponse updateApplication(Long id, ApplicationRequest request) {
+        Application db = applicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
 
-        db.setDeploymentDate(req.getDeploymentDate());
-        db.setDeploymentPath(req.getDeploymentPath());
-        db.setRemarks(req.getRemarks());
-        db.setServer(req.getServer());
+        // sanitize and assign
+        if (request.getName() != null) db.setName(SanitizationUtil.cleanText(request.getName()));
+        if (request.getVersion() != null) db.setVersion(SanitizationUtil.cleanText(request.getVersion()));
+        if (request.getDescription() != null) db.setDescription(SanitizationUtil.cleanHtml(request.getDescription()));
+        if (request.getOwnerId() != null) db.setOwnerId(SanitizationUtil.cleanText(request.getOwnerId()));
+        if (request.getStatus() != null) db.setStatus(request.getStatus());
 
-        return deploymentRepository.save(db);
+        // categories replace
+        if (request.getCategoryIds() != null) {
+            List<ApplicationCategory> cats = categoryRepository.findAllById(request.getCategoryIds());
+            db.setCategories(new ArrayList<>(cats));
+        }
+
+        // modules: for update approach we'll apply an upsert-like logic
+        if (request.getModules() != null) {
+            // Delete modules that are not present in request (optional policy)
+            // For simplicity: clear existing and recreate from request
+            // If you want to preserve ids, implement matching logic.
+            // Remove existing
+            if (db.getModules() != null) {
+                moduleRepository.deleteAll(db.getModules());
+                db.getModules().clear();
+            }
+
+            List<ApplicationModule> newModules = request.getModules().stream()
+                    .map(mr -> {
+                        ApplicationModule m = ApplicationModule.builder()
+                                .moduleName(SanitizationUtil.cleanText(mr.getModuleName()))
+                                .description(SanitizationUtil.cleanHtml(mr.getDescription()))
+                                .responsibleId(SanitizationUtil.cleanText(mr.getResponsibleId()))
+                                .application(db)
+                                .build();
+                        return moduleRepository.save(m);
+                    }).collect(Collectors.toList());
+            db.setModules(newModules);
+        }
+
+        // deployments update: same approach - remove all and recreate (change policy as needed)
+        if (request.getDeployments() != null) {
+            if (db.getDeployments() != null) {
+                deploymentRepository.deleteAll(db.getDeployments());
+                db.getDeployments().clear();
+            }
+
+            List<ApplicationDeployment> newDeploys = new ArrayList<>();
+            for (ApplicationDeploymentRequest dr : request.getDeployments()) {
+                Server server = serverRepository.findById(dr.getServerId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Server not found with id: " + dr.getServerId()));
+
+                ApplicationDeployment d = ApplicationDeployment.builder()
+                        .application(db)
+                        .server(server)
+                        .deploymentPath(SanitizationUtil.cleanText(dr.getDeploymentPath()))
+                        .deploymentDate(dr.getDeploymentDate())
+                        .remarks(SanitizationUtil.cleanHtml(dr.getRemarks()))
+                        .build();
+                newDeploys.add(deploymentRepository.save(d));
+            }
+            db.setDeployments(newDeploys);
+        }
+
+        Application saved = applicationRepository.save(db);
+        return toApplicationResponse(saved);
     }
 
     @Override
-    public void removeDeployment(Long appId, Long deploymentId) {
-        deploymentRepository.deleteById(deploymentId);
-    }
-
-    // ------------------- CATEGORY MANAGEMENT -------------------
-    @Override
-    public Application assignCategory(Long appId, Long categoryId) {
-        Application app = getById(appId);
-        ApplicationCategory category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
-
-        app.getCategories().add(category);
-        return applicationRepository.save(app);
+    public void deleteApplication(Long id) {
+        Application db = applicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
+        // soft-delete behavior: mark as archived
+        db.setStatus(ApplicationStatus.ARCHIVED);
+        applicationRepository.save(db);
     }
 
     @Override
-    public Application removeCategory(Long appId, Long categoryId) {
-        Application app = getById(appId);
-        ApplicationCategory category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+    @Transactional(readOnly = true)
+    public ApplicationResponse getApplicationById(Long id) {
+        Application db = applicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
+        return toApplicationResponse(db);
+    }
 
-        app.getCategories().remove(category);
-        return applicationRepository.save(app);
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationResponse> getAllApplications() {
+        return applicationRepository.findAll().stream()
+                .map(this::toApplicationResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationResponse> getByOwner(String ownerId) {
+        return applicationRepository.findByOwnerId(ownerId).stream()
+                .map(this::toApplicationResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationResponse> getByCategory(Long categoryId) {
+        return applicationRepository.findByCategories_Id(categoryId).stream()
+                .map(this::toApplicationResponse)
+                .collect(Collectors.toList());
+    }
+
+    // ---------------- Mapping helpers ----------------
+
+    private ApplicationResponse toApplicationResponse(Application app) {
+        List<ApplicationCategoryResponse> categories = (app.getCategories() == null)
+                ? Collections.emptyList()
+                : app.getCategories().stream()
+                .map(c -> ApplicationCategoryResponse.builder()
+                        .id(c.getId())
+                        .title(c.getTitle())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<ApplicationModuleResponse> modules = (app.getModules() == null)
+                ? Collections.emptyList()
+                : app.getModules().stream()
+                .map(m -> ApplicationModuleResponse.builder()
+                        .id(m.getId())
+                        .moduleName(m.getModuleName())
+                        .description(m.getDescription())
+                        .responsibleId(m.getResponsibleId())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<ApplicationDeploymentResponse> deployments = (app.getDeployments() == null)
+                ? Collections.emptyList()
+                : app.getDeployments().stream()
+                .map(d -> ApplicationDeploymentResponse.builder()
+                        .id(d.getId())
+                        .server(toServerResponse(d.getServer()))
+                        .deploymentDate(d.getDeploymentDate())
+                        .deploymentPath(d.getDeploymentPath())
+                        .remarks(d.getRemarks())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ApplicationResponse.builder()
+                .id(app.getId())
+                .name(app.getName())
+                .version(app.getVersion())
+                .description(app.getDescription())
+                .status(app.getStatus())
+                .ownerId(app.getOwnerId())
+                .categories(categories)
+                .modules(modules)
+                .deployments(deployments)
+                .build();
+    }
+
+    private ServerResponse toServerResponse(Server server) {
+        if (server == null) return null;
+        return ServerResponse.builder()
+                .id(server.getId())
+                .hostname(server.getHostname())
+                .ipAddress(server.getIpAddress())
+                .url(server.getUrl())
+                .port(server.getPort())
+                .operatingSystem(server.getOperatingSystem())
+                .osVersion(server.getOsVersion())
+                .environment(server.getEnvironment())
+                .cpu(server.getCpu())
+                .memory(server.getMemory())
+                .diskSpace(server.getDiskSpace())
+                .build();
     }
 }

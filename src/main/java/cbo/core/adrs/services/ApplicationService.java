@@ -1,46 +1,23 @@
 package cbo.core.adrs.services;
 
-import cbo.core.adrs.enums.ApplicationStatus;
-import cbo.core.adrs.models.Application;
-import cbo.core.adrs.models.ApplicationDeployment;
-import cbo.core.adrs.models.ApplicationModule;
+import cbo.core.adrs.dtos.ApplicationRequest;
+import cbo.core.adrs.dtos.ApplicationResponse;
 
 import java.util.List;
 
 public interface ApplicationService {
 
-    Application create(Application application);
+    ApplicationResponse createApplication(ApplicationRequest request);
 
-    Application update(Long id, Application application);
+    ApplicationResponse updateApplication(Long id, ApplicationRequest request);
 
-    void delete(Long id); // soft delete recommended
+    void deleteApplication(Long id);
 
-    Application getById(Long id);
+    ApplicationResponse getApplicationById(Long id);
 
-    List<Application> getAll();
+    List<ApplicationResponse> getAllApplications();
 
-    List<Application> getByStatus(ApplicationStatus status);
-
-    List<Application> getByCategory(Long categoryId);
-
-    List<Application> getByOwner(String ownerId);
-
-    // --- Module operations ---
-    ApplicationModule addModule(Long appId, ApplicationModule module);
-
-    ApplicationModule updateModule(Long appId, Long moduleId, ApplicationModule module);
-
-    void removeModule(Long appId, Long moduleId);
-
-    // --- Deployment operations ---
-    ApplicationDeployment addDeployment(Long appId, ApplicationDeployment deployment);
-
-    ApplicationDeployment updateDeployment(Long appId, Long deploymentId, ApplicationDeployment deployment);
-
-    void removeDeployment(Long appId, Long deploymentId);
-
-    // --- Category operations ---
-    Application assignCategory(Long appId, Long categoryId);
-
-    Application removeCategory(Long appId, Long categoryId);
+    // Additional finders
+    List<ApplicationResponse> getByOwner(String ownerId);
+    List<ApplicationResponse> getByCategory(Long categoryId);
 }

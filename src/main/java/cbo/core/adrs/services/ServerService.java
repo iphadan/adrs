@@ -1,17 +1,15 @@
 package cbo.core.adrs.services;
 
-
-import cbo.core.adrs.models.Server;
+import cbo.core.adrs.dtos.ServerRequest;
+import cbo.core.adrs.dtos.ServerResponse;
 
 import java.util.List;
 
 public interface ServerService {
-
-    Server create(Server server);
-    Server update(Long id, Server server);
-    void delete(Long id);
-    Server getById(Long id);
-    List<Server> getAll();
-    List<Server> getByEnvironment(String environment); // PROD, UAT, DEV, DR
+    ServerResponse createServer(ServerRequest request);
+    ServerResponse updateServer(Long id, ServerRequest request);
+    void deleteServer(Long id);
+    ServerResponse getServerById(Long id);
+    List<ServerResponse> getAllServers();
+    List<ServerResponse> getByEnvironment(String environment);
 }
-

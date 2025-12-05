@@ -1,18 +1,19 @@
 package cbo.core.adrs.models;
 
 import cbo.core.adrs.enums.ApplicationStatus;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "applications")
 @Data
+@Builder
 public class Application {
 
     @Id
