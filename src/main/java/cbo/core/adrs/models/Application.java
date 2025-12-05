@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
-
+// how to store the license
 @Entity
 @Table(name = "applications")
 @Data
@@ -28,6 +28,7 @@ public class Application {
     private String version;
 
     private String description;
+
 
     @Enumerated(EnumType.STRING)
     private ApplicationStatus status;
