@@ -2,6 +2,7 @@ package cbo.core.adrs.controllers;
 
 import cbo.core.adrs.dtos.ApplicationRequest;
 import cbo.core.adrs.dtos.ApplicationResponse;
+import cbo.core.adrs.utils.InputSanitizer;
 import cbo.core.adrs.services.ApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +17,13 @@ import java.util.List;
 public class ApplicationController {
 
     private final ApplicationService applicationService;
+    private final InputSanitizer sanitizer;
 
     @PostMapping
     public ResponseEntity<ApplicationResponse> createApplication(
             @Valid @RequestBody ApplicationRequest request
     ) {
+        sanitize(request);
         return ResponseEntity.ok(applicationService.createApplication(request));
     }
 
@@ -39,6 +42,7 @@ public class ApplicationController {
             @PathVariable Long id,
             @Valid @RequestBody ApplicationRequest request
     ) {
+        sanitize(request);
         return ResponseEntity.ok(applicationService.updateApplication(id, request));
     }
 
@@ -46,5 +50,15 @@ public class ApplicationController {
     public ResponseEntity<String> deleteApplication(@PathVariable Long id) {
         applicationService.deleteApplication(id);
         return ResponseEntity.ok("Application deleted successfully.");
+    }
+
+    // -----------------------------------
+    // XSS Sanitization for DTO input
+    // -----------------------------------
+    private void sanitize(ApplicationRequest request) {
+        request.setName(sanitizer.sanitize(request.getName()));
+        request.setDescription(sanitizer.sanitize(request.getDescription()));
+        request.setVersion(sanitizer.sanitize(request.getVersion()));
+        request.setOwnerId(sanitizer.sanitize(request.getOwnerId()));
     }
 }

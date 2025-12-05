@@ -1,20 +1,22 @@
+// ApplicationModuleRequest.java
 package cbo.core.adrs.dtos;
-
 
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.NotNull;
 
 @Data
 public class ApplicationModuleRequest {
+    // ApplicationModuleRequest.java
+    @NotNull
+    private Long applicationId;
 
-    @NotBlank(message = "Module name is required")
+    @NotBlank
     private String moduleName;
 
-    @Size(max = 500)
     private String description;
 
-    @NotBlank(message = "Responsible person ID is required")
-    private String responsibleId;
+    private String responsibleId; // added to match service
+
 }

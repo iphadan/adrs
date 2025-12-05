@@ -9,9 +9,7 @@ import java.util.List;
 
 @Repository
 public interface ApplicationRepo extends JpaRepository<Application,Long> {
-    List<Application> findByStatus(ApplicationStatus status);
-
-    List<Application> findByCategories_Id(Long categoryId);
-
     List<Application> findByOwnerId(String ownerId);
+    List<Application> findByCategories_Id(Long categoryId);
+    List<Application> findByStatus(cbo.core.adrs.enums.ApplicationStatus status);
 }

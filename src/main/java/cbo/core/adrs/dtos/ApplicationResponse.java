@@ -16,7 +16,7 @@ public class ApplicationResponse {
     private String description;
     private ApplicationStatus status;
     private String ownerId;
-
+private ServerResponse server;
     private List<ApplicationCategoryResponse> categories;
     private List<ApplicationModuleResponse> modules;
     private List<ApplicationDeploymentResponse> deployments;
