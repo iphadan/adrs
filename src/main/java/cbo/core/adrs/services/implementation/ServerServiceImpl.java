@@ -26,8 +26,7 @@ public class ServerServiceImpl implements ServerService {
         Server server = Server.builder()
                 .hostname(SanitizationUtil.cleanText(request.getHostname()))
                 .ipAddress(SanitizationUtil.cleanText(request.getIpAddress()))
-                .url(SanitizationUtil.cleanText(request.getUrl()))
-                .port(request.getPort())
+                .url(SanitizationUtil.cleanText(request.getUrl() != null ? request.getUrl() : "http://"+request.getIpAddress()))
                 .operatingSystem(SanitizationUtil.cleanText(request.getOperatingSystem()))
                 .osVersion(SanitizationUtil.cleanText(request.getOsVersion()))
                 .environment(SanitizationUtil.cleanText(request.getEnvironment()))
@@ -48,7 +47,6 @@ public class ServerServiceImpl implements ServerService {
         if (request.getHostname() != null) db.setHostname(SanitizationUtil.cleanText(request.getHostname()));
         if (request.getIpAddress() != null) db.setIpAddress(SanitizationUtil.cleanText(request.getIpAddress()));
         if (request.getUrl() != null) db.setUrl(SanitizationUtil.cleanText(request.getUrl()));
-        if (request.getPort() != null) db.setPort(request.getPort());
         if (request.getOperatingSystem() != null) db.setOperatingSystem(SanitizationUtil.cleanText(request.getOperatingSystem()));
         if (request.getOsVersion() != null) db.setOsVersion(SanitizationUtil.cleanText(request.getOsVersion()));
         if (request.getEnvironment() != null) db.setEnvironment(SanitizationUtil.cleanText(request.getEnvironment()));

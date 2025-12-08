@@ -3,10 +3,7 @@ package cbo.core.adrs.dtos;
 import cbo.core.adrs.enums.ApplicationStatus;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.util.List;
 
 @Data
@@ -30,7 +27,10 @@ public class ApplicationRequest {
 
     @NotEmpty(message = "At least one category must be selected")
     private List<Long> categoryIds;
-
+    @NotNull(message = "Port is required")
+    @Min(1)
+    @Max(65535)
+    private Integer port;
     private List<ApplicationModuleRequest> modules;
 
     private List<ApplicationDeploymentRequest> deployments;

@@ -11,7 +11,6 @@ import org.springframework.web.filter.CorsFilter;
 import java.util.Arrays;
 
 @SpringBootApplication
-
 public class AdrsApplication {
 
 	@Value("${allowed.origins}")

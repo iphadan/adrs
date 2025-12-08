@@ -7,6 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 // how to store the license
@@ -27,6 +30,7 @@ public class Application {
 
     private String version;
 
+    private Integer port;
     private String description;
 
 

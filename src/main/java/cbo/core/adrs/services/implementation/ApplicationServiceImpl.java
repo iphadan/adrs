@@ -41,6 +41,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .description(description)
                 .ownerId(ownerId)
                 .status(request.getStatus() == null ? ApplicationStatus.ACTIVE : request.getStatus())
+                .port(request.getPort())
                 .build();
 
         // categories

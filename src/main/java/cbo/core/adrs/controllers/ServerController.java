@@ -21,6 +21,7 @@ public class ServerController {
     public ResponseEntity<ServerResponse> createServer(
             @Valid @RequestBody ServerRequest request
     ) {
+        System.out.println(request);
         return ResponseEntity.ok(serverService.createServer(request));
     }
 

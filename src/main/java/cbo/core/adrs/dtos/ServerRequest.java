@@ -17,10 +17,7 @@ public class ServerRequest {
 
     private String url;
 
-    @NotNull(message = "Port is required")
-    @Min(1)
-    @Max(65535)
-    private Integer port;
+
 
     private String operatingSystem;
     private String osVersion;
