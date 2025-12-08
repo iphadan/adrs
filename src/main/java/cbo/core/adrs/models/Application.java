@@ -2,6 +2,7 @@ package cbo.core.adrs.models;
 
 import cbo.core.adrs.enums.ApplicationStatus;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,8 @@ import java.util.List;
 @Entity
 @Table(name = "applications")
 @Data
+@NoArgsConstructor      // <--- Required for Hibernate
+@AllArgsConstructor
 @Builder
 public class Application {
 
@@ -38,8 +41,9 @@ public class Application {
     private ApplicationStatus status;
 
     // Application owner (main person)
+private String ownerName;
 
-    private String ownerId;
+    private String responsibleName;
 
     // Modules
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL)

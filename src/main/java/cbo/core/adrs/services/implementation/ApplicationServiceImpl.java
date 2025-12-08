@@ -33,15 +33,20 @@ public class ApplicationServiceImpl implements ApplicationService {
         String name = SanitizationUtil.cleanText(request.getName());
         String version = SanitizationUtil.cleanText(request.getVersion());
         String description = SanitizationUtil.cleanHtml(request.getDescription());
-        String ownerId = SanitizationUtil.cleanText(request.getOwnerId());
+        String ownerName = SanitizationUtil.cleanText(request.getOwnerName());
+        String responsibleName = SanitizationUtil.cleanText(request.getResponsibleName());
+
+
 
         Application app = Application.builder()
                 .name(name)
                 .version(version)
                 .description(description)
-                .ownerId(ownerId)
+                .ownerName(ownerName)
+                .responsibleName((responsibleName))
                 .status(request.getStatus() == null ? ApplicationStatus.ACTIVE : request.getStatus())
                 .port(request.getPort())
+
                 .build();
 
         // categories
@@ -105,7 +110,8 @@ public class ApplicationServiceImpl implements ApplicationService {
         if (request.getName() != null) db.setName(SanitizationUtil.cleanText(request.getName()));
         if (request.getVersion() != null) db.setVersion(SanitizationUtil.cleanText(request.getVersion()));
         if (request.getDescription() != null) db.setDescription(SanitizationUtil.cleanHtml(request.getDescription()));
-        if (request.getOwnerId() != null) db.setOwnerId(SanitizationUtil.cleanText(request.getOwnerId()));
+        if (request.getOwnerName() != null) db.setOwnerName(SanitizationUtil.cleanText(request.getOwnerName()));
+        if (request.getResponsibleName() != null) db.setResponsibleName(SanitizationUtil.cleanText(request.getResponsibleName()));
         if (request.getStatus() != null) db.setStatus(request.getStatus());
 
         // categories replace
@@ -193,8 +199,8 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ApplicationResponse> getByOwner(String ownerId) {
-        return applicationRepository.findByOwnerId(ownerId).stream()
+    public List<ApplicationResponse> getByOwner(String ownerName) {
+        return applicationRepository.findByOwnerName(ownerName).stream()
                 .map(this::toApplicationResponse)
                 .collect(Collectors.toList());
     }
@@ -248,7 +254,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .version(app.getVersion())
                 .description(app.getDescription())
                 .status(app.getStatus())
-                .ownerId(app.getOwnerId())
+                .ownerName(app.getOwnerName())
                 .categories(categories)
                 .modules(modules)
                 .deployments(deployments)

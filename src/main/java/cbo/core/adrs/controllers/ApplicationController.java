@@ -59,6 +59,8 @@ public class ApplicationController {
         request.setName(sanitizer.sanitize(request.getName()));
         request.setDescription(sanitizer.sanitize(request.getDescription()));
         request.setVersion(sanitizer.sanitize(request.getVersion()));
-        request.setOwnerId(sanitizer.sanitize(request.getOwnerId()));
+        request.setOwnerName(sanitizer.sanitize(request.getOwnerName()));
+        request.setResponsibleName(sanitizer.sanitize(request.getResponsibleName()));
+
     }
 }

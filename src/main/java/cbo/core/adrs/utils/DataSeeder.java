@@ -37,13 +37,17 @@ public class DataSeeder implements CommandLineRunner {
                 "KYC / Identity Verification",
                 "HR Management System",
                 "ERP System",
+                "Report Management",
                 "Document Management System",
                 "CRM System",
                 "Reporting & BI",
                 "API Gateway / ESB",
                 "CI/CD Tools",
                 "Version Control System",
-                "Open Source Software"
+                "Internal Development",
+                "Financial System",
+                "Open Source Software",
+                "Licensed"
         );
 
         for (String title : categories) {

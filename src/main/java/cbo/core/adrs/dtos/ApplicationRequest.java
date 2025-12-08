@@ -1,6 +1,7 @@
 package cbo.core.adrs.dtos;
 
 import cbo.core.adrs.enums.ApplicationStatus;
+import cbo.core.adrs.models.Server;
 import lombok.Data;
 
 import javax.validation.constraints.*;
@@ -22,14 +23,14 @@ public class ApplicationRequest {
     @NotNull(message = "Status is required")
     private ApplicationStatus status;
 
-    @NotBlank(message = "Owner ID is required")
-    private String ownerId;
+    @NotBlank(message = "Owner Name is required")
+    private String ownerName;
+    @NotBlank(message = "Responsible Name is required")
+    private String responsibleName;
 
     @NotEmpty(message = "At least one category must be selected")
     private List<Long> categoryIds;
-    @NotNull(message = "Port is required")
-    @Min(1)
-    @Max(65535)
+
     private Integer port;
     private List<ApplicationModuleRequest> modules;
 

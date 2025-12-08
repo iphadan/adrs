@@ -18,10 +18,11 @@ public class ApplicationResponse {
     private String version;
     private String description;
     private ApplicationStatus status;
-    private String ownerId;
+    private String ownerName;
+    private String responsibleName;
 
     private Integer port;
-private ServerResponse server;
+
     private List<ApplicationCategoryResponse> categories;
     private List<ApplicationModuleResponse> modules;
     private List<ApplicationDeploymentResponse> deployments;
